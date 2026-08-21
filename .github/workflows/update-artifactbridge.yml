@@ -1,0 +1,81 @@
+name: Update ArtifactBridge Cask
+
+on:
+  repository_dispatch:
+    types: [artifactbridge_stable_release]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: artifactbridge-cask-${{ github.event.client_payload.tag }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: verify release and open pull request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate the immutable stable release
+        id: release
+        env:
+          TRAY_TAG: ${{ github.event.client_payload.tag }}
+        run: |
+          set -euo pipefail
+          release_dir="$RUNNER_TEMP/artifactbridge-release"
+          scripts/verify-artifactbridge-release.sh "$TRAY_TAG" "$release_dir"
+          version="$(tr -d '\r\n' < "$release_dir/VERSION")"
+          sha256="$(tr -d '\r\n' < "$release_dir/DMG-SHA256")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Render the Cask
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          SHA256: ${{ steps.release.outputs.sha256 }}
+        run: scripts/render-artifactbridge-cask.sh "$VERSION" "$SHA256"
+
+      - name: Reject a non-advancing version
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          git show HEAD:Casks/artifactbridge.rb > "$RUNNER_TEMP/current.rb" 2>/dev/null || exit 0
+          current="$(ruby -ne 'puts $1 if $_ =~ /^  version "([^"]+)"$/' "$RUNNER_TEMP/current.rb")"
+          ruby -e '
+            require "rubygems"
+            incoming = Gem::Version.new(ARGV.fetch(0))
+            current = Gem::Version.new(ARGV.fetch(1))
+            abort "release #{incoming} does not advance published Cask #{current}" unless incoming > current
+          ' "$VERSION" "$current"
+
+      - name: Run repository contract tests
+        run: scripts/test-repository.sh
+
+      - name: Commit the immutable version update
+        id: commit
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="automation/artifactbridge-$VERSION"
+          git switch -C "$branch"
+          git add -- Casks/artifactbridge.rb
+          git config user.name "artifactbridge-release[bot]"
+          git config user.email "artifactbridge-release[bot]@users.noreply.github.com"
+          git commit -m "artifactbridge $VERSION"
+          git fetch origin "$branch" || true
+          git push --force-with-lease --set-upstream origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Write the release summary
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          BRANCH: ${{ steps.commit.outputs.branch }}
+        run: |
+          printf 'ArtifactBridge %s Cask branch: `%s`\n' "$VERSION" "$BRANCH" >> "$GITHUB_STEP_SUMMARY"
