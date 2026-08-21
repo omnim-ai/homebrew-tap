@@ -23,7 +23,7 @@ workflow in this repository then:
 2. verifies the stable release identity and every downloaded digest;
 3. generates `Casks/artifactbridge.rb`;
 4. runs the repository contract checks; and
-5. pushes an immutable version branch.
+5. pushes a version branch.
 
 The repository-scoped GitHub App then opens the pull request from the private
 ArtifactBridge release workflow. The App credential stays in the private
