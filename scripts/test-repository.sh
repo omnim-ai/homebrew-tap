@@ -15,18 +15,7 @@ sample="$temporary/artifactbridge.rb"
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
   "$sample"
 ruby -c "$sample" >/dev/null
-
-grep -Fq 'auto_updates true' "$sample"
-grep -Fq 'depends_on :macos' "$sample"
-grep -Fq 'app "ArtifactBridge Tray.app"' "$sample"
-grep -Fq 'binary "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge"' "$sample"
-grep -Fq 'register-homebrew-cask' "$sample"
-grep -Fq 'unregister-homebrew-cask' "$sample"
-grep -Fq 'uninstall quit: "com.artifactbridge.tray"' "$sample"
-if grep -Eq '^[[:space:]]*zap([[:space:]]|$)' "$sample"; then
-  echo "the ArtifactBridge Cask must not contain a zap stanza" >&2
-  exit 1
-fi
+"$root/scripts/assert-cask-contract.sh" "$sample"
 
 for workflow in "$root"/.github/workflows/*.yml; do
   ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0)) or abort "invalid YAML"' "$workflow"
@@ -34,8 +23,23 @@ done
 
 if [[ -f "$root/Casks/artifactbridge.rb" ]]; then
   ruby -c "$root/Casks/artifactbridge.rb" >/dev/null
-  grep -Fq 'auto_updates true' "$root/Casks/artifactbridge.rb"
-  ! grep -Eq '^[[:space:]]*zap([[:space:]]|$)' "$root/Casks/artifactbridge.rb"
+  "$root/scripts/assert-cask-contract.sh" "$root/Casks/artifactbridge.rb"
+
+  # the checked-in Cask must be exactly what the generator emits for its own
+  # version and digest, so a repository dispatch can never regenerate a
+  # broken contract
+  version="$(sed -n 's/^  version "\([0-9.]*\)"$/\1/p' "$root/Casks/artifactbridge.rb")"
+  sha256="$(sed -n 's/^  sha256 "\([0-9a-f]\{64\}\)"$/\1/p' "$root/Casks/artifactbridge.rb")"
+  if [[ -z "$version" || -z "$sha256" ]]; then
+    echo "Casks/artifactbridge.rb does not expose a version and sha256" >&2
+    exit 1
+  fi
+  regenerated="$temporary/regenerated.rb"
+  "$root/scripts/render-artifactbridge-cask.sh" "$version" "$sha256" "$regenerated"
+  if ! cmp -s "$regenerated" "$root/Casks/artifactbridge.rb"; then
+    echo "Casks/artifactbridge.rb does not match the generator output" >&2
+    exit 1
+  fi
 fi
 
 echo "tap repository contract: PASS"

@@ -14,15 +14,14 @@ cask "artifactbridge" do
     end
   end
 
-  auto_updates true
   depends_on :macos
 
-  app "ArtifactBridge Tray.app"
-  binary "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge",
+  app "ArtifactBridge.app"
+  binary "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
 
   postflight do
-    system_command "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge",
+    system_command "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
                    args:         [
                      "installation",
                      "register-homebrew-cask",
@@ -34,7 +33,7 @@ cask "artifactbridge" do
   end
 
   uninstall_preflight do
-    system_command "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge",
+    system_command "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
                    args:         [
                      "installation",
                      "unregister-homebrew-cask",

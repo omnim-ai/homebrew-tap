@@ -7,7 +7,7 @@ version="${1:-}"
   exit 2
 }
 
-app="/Applications/ArtifactBridge Tray.app"
+app="/Applications/ArtifactBridge.app"
 cli="$(brew --prefix)/bin/artifactbridge"
 record="$HOME/.artifactbridge/installation.json"
 
