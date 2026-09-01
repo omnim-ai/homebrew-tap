@@ -131,6 +131,46 @@ mutant() {
       awk '{ print } /^  depends_on :macos$/ { print "  system_command \"/bin/true\"," }' "$base" >"$out" ;;
     swapped-register-command)
       sed 's/"register-homebrew-cask"/"unregister-homebrew-cask"/' "$base" >"$out" ;;
+    wrap-app-on_arm)
+      awk '/^  app "/ { print "  on_arm do"; print; print "  end"; next } { print }' "$base" >"$out" ;;
+    wrap-app-on_intel)
+      awk '/^  app "/ { print "  on_intel do"; print; print "  end"; next } { print }' "$base" >"$out" ;;
+    wrap-binary-on_arm)
+      awk '
+        /^  binary "/ { print "  on_arm do"; print; pend = 1; next }
+        pend { print; pend = 0; print "  end"; next }
+        { print }
+      ' "$base" >"$out" ;;
+    wrap-postflight-on_arm)
+      awk '
+        /^  postflight do$/ { inpf = 1; print "  on_arm do"; print; next }
+        inpf && /^  end$/ { inpf = 0; print; print "  end"; next }
+        { print }
+      ' "$base" >"$out" ;;
+    wrap-uninstall-preflight-on_intel)
+      awk '
+        /^  uninstall_preflight do$/ { inup = 1; print "  on_intel do"; print; next }
+        inup && /^  end$/ { inup = 0; print; print "  end"; next }
+        { print }
+      ' "$base" >"$out" ;;
+    wrap-uninstall-quit-on_arm)
+      awk '/^  uninstall quit:/ { print "  on_arm do"; print; print "  end"; next } { print }' "$base" >"$out" ;;
+    heredoc-entire-cask)
+      { printf 'cask "artifactbridge" do\n'
+        printf '  text = <<~CASK\n'
+        cat "$base"
+        printf 'CASK\n'
+        printf 'end\n'
+      } >"$out" ;;
+    qstring-entire-cask)
+      { printf '%%q{\n'
+        cat "$base"
+        printf '}\n'
+      } >"$out" ;;
+    unknown-block-inserted)
+      awk '{ print } /^  uninstall quit:/ { print "  hardware do"; print "    true"; print "  end" }' "$base" >"$out" ;;
+    unknown-statement-inserted)
+      awk '{ print } /^  uninstall quit:/ { print "  exec_utils \"/usr/bin/true\"" }' "$base" >"$out" ;;
     *)
       echo "unknown mutation: $mutation" >&2
       exit 2
@@ -168,7 +208,17 @@ for mutation in \
   comment-livecheck \
   unclosed-block \
   system-command-outside-blocks \
-  swapped-register-command; do
+  swapped-register-command \
+  wrap-app-on_arm \
+  wrap-app-on_intel \
+  wrap-binary-on_arm \
+  wrap-postflight-on_arm \
+  wrap-uninstall-preflight-on_intel \
+  wrap-uninstall-quit-on_arm \
+  heredoc-entire-cask \
+  qstring-entire-cask \
+  unknown-block-inserted \
+  unknown-statement-inserted; do
   mutant "canonical-$mutation" 1.2.3 "$mutation"
 done
 
@@ -186,7 +236,10 @@ for mutation in \
   comment-uninstall-quit \
   add-zap \
   comment-livecheck \
-  unclosed-block; do
+  unclosed-block \
+  wrap-app-on_arm \
+  wrap-postflight-on_arm \
+  heredoc-entire-cask; do
   mutant "historical-$mutation" 0.5.25 "$mutation"
 done
 

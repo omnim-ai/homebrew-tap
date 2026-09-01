@@ -23,6 +23,8 @@ codesign --verify --deep --strict "$app"
 spctl --assess --verbose=2 --type execute "$app"
 xcrun stapler validate "$app"
 [[ "$(defaults read "$app/Contents/Info" CFBundleIdentifier)" == "com.artifactbridge.tray" ]]
+[[ "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" == "$version" ]]
+[[ "$(defaults read "$app/Contents/Info" CFBundleVersion)" == "$version" ]]
 
 for executable in "$app/Contents/MacOS/artifactbridge" "$app/Contents/MacOS/artifactbridge-tray"; do
   [[ -x "$executable" ]]
