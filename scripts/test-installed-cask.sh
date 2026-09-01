@@ -8,6 +8,14 @@ version="${1:-}"
 }
 
 app="/Applications/ArtifactBridge.app"
+# The bundle name follows the immutable release layout: tray-v0.5.25 is the
+# last release shipping "ArtifactBridge Tray.app", tray-v0.5.26 is the first
+# shipping "ArtifactBridge.app".
+IFS=. read -r major minor patch <<<"$version"
+if ((10#$major == 0 && 10#$minor == 5 && 10#$patch < 26)) \
+  || ((10#$major == 0 && 10#$minor < 5)); then
+  app="/Applications/ArtifactBridge Tray.app"
+fi
 cli="$(brew --prefix)/bin/artifactbridge"
 record="$HOME/.artifactbridge/installation.json"
 
