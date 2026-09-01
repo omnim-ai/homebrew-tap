@@ -21,6 +21,23 @@ if ((10#$major == 0 && 10#$minor < 5)) \
   exit 1
 fi
 
+# Release-layout boundary from the immutable published DMGs: tray-v0.5.25 is
+# the last release shipping "ArtifactBridge Tray.app" (with the application-
+# owned update marker); tray-v0.5.26 is the first shipping the canonical
+# "ArtifactBridge.app", after which Homebrew owns updates.
+canonical=0
+if ((10#$major > 0)) \
+  || ((10#$major == 0 && 10#$minor > 5)) \
+  || ((10#$major == 0 && 10#$minor == 5 && 10#$patch >= 26)); then
+  canonical=1
+fi
+app_bundle="ArtifactBridge.app"
+ownership=""
+if ((canonical == 0)); then
+  app_bundle="ArtifactBridge Tray.app"
+  ownership=$'  auto_updates true\n'
+fi
+
 mkdir -p "$(dirname "$output")"
 temporary="$(mktemp "${output}.tmp.XXXXXX")"
 trap 'rm -f -- "$temporary"' EXIT
@@ -42,15 +59,14 @@ cask "artifactbridge" do
     end
   end
 
-  auto_updates true
-  depends_on :macos
+${ownership}  depends_on :macos
 
-  app "ArtifactBridge Tray.app"
-  binary "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge",
+  app "$app_bundle"
+  binary "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
 
   postflight do
-    system_command "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge",
+    system_command "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
                    args:         [
                      "installation",
                      "register-homebrew-cask",
@@ -62,7 +78,7 @@ cask "artifactbridge" do
   end
 
   uninstall_preflight do
-    system_command "#{appdir}/ArtifactBridge Tray.app/Contents/MacOS/artifactbridge",
+    system_command "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
                    args:         [
                      "installation",
                      "unregister-homebrew-cask",
