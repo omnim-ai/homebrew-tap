@@ -2,8 +2,8 @@
 # Negative fixtures for the ArtifactBridge Cask contract.
 #
 # Each mutation of a rendered Cask MUST fail scripts/assert-cask-contract.sh:
-# commented-out or missing app/binary/postflight-register/uninstall_preflight-
-# unregister behavior, duplicated stanzas, misplaced or malformed blocks,
+# commented-out or missing app/binary/postflight_steps-register/
+# uninstall_preflight_steps-unregister behavior, duplicated stanzas, misplaced or malformed blocks,
 # wrong bundle layout for the version, and wrong ownership marker.
 
 set -euo pipefail
@@ -60,57 +60,61 @@ mutant() {
       awk '{ if ($0 !~ /^  binary "/) print }' "$base" >"$out" ;;
     comment-postflight-block)
       awk '
-        /^  postflight do$/ { inblk = 1 }
+        /^  postflight_steps do$/ { inblk = 1 }
         inblk { sub(/^/, "#") }
         inblk && /^# *end$/ { inblk = 0 }
         { print }
       ' "$base" >"$out" ;;
     remove-postflight-block)
       awk '
-        /^  postflight do$/ { inblk = 1; next }
+        /^  postflight_steps do$/ { inblk = 1; next }
         inblk && /^  end$/ { inblk = 0; next }
         inblk { next }
         { print }
       ' "$base" >"$out" ;;
     comment-uninstall-preflight-block)
       awk '
-        /^  uninstall_preflight do$/ { inblk = 1 }
+        /^  uninstall_preflight_steps do$/ { inblk = 1 }
         inblk { sub(/^/, "#") }
         inblk && /^# *end$/ { inblk = 0 }
         { print }
       ' "$base" >"$out" ;;
     remove-uninstall-preflight-block)
       awk '
-        /^  uninstall_preflight do$/ { inblk = 1; next }
+        /^  uninstall_preflight_steps do$/ { inblk = 1; next }
         inblk && /^  end$/ { inblk = 0; next }
         inblk { next }
         { print }
       ' "$base" >"$out" ;;
     drop-register-json)
       awk '
-        /^  postflight do$/ { inblk = 1 }
+        /^  postflight_steps do$/ { inblk = 1 }
         inblk && /^ +"--json",$/ { next }
         inblk && /^  end$/ { inblk = 0 }
         { print }
       ' "$base" >"$out" ;;
     drop-register-must-succeed)
       awk '
-        /^  postflight do$/ { inblk = 1 }
-        inblk { sub(/must_succeed: true/, "must_succeed: false") }
+        /^  postflight_steps do$/ { inblk = 1 }
+        inblk { sub(/must_succeed:[[:space:]]+true/, "must_succeed: false") }
         inblk && /^  end$/ { inblk = 0 }
         { print }
       ' "$base" >"$out" ;;
     drop-unregister-must-succeed)
       awk '
-        /^  uninstall_preflight do$/ { inblk = 1 }
-        inblk { sub(/must_succeed: true/, "must_succeed: false") }
+        /^  uninstall_preflight_steps do$/ { inblk = 1 }
+        inblk { sub(/must_succeed:[[:space:]]+true/, "must_succeed: false") }
         inblk && /^  end$/ { inblk = 0 }
         { print }
       ' "$base" >"$out" ;;
+    legacy-postflight-block)
+      sed 's/^  postflight_steps do$/  postflight do/' "$base" >"$out" ;;
+    legacy-uninstall-preflight-block)
+      sed 's/^  uninstall_preflight_steps do$/  uninstall_preflight do/' "$base" >"$out" ;;
     duplicate-app)
       awk '{ print } /^  app "/ { print }' "$base" >"$out" ;;
     duplicate-postflight)
-      awk '{ print } /^  postflight do$/ { print "  postflight do" }' "$base" >"$out" ;;
+      awk '{ print } /^  postflight_steps do$/ { print "  postflight_steps do" }' "$base" >"$out" ;;
     auto-updates-in-canonical)
       awk '{ print } /^  depends_on :macos$/ { print "  auto_updates true" }' "$base" >"$out" ;;
     auto-updates-missing-historical)
@@ -143,13 +147,13 @@ mutant() {
       ' "$base" >"$out" ;;
     wrap-postflight-on_arm)
       awk '
-        /^  postflight do$/ { inpf = 1; print "  on_arm do"; print; next }
+        /^  postflight_steps do$/ { inpf = 1; print "  on_arm do"; print; next }
         inpf && /^  end$/ { inpf = 0; print; print "  end"; next }
         { print }
       ' "$base" >"$out" ;;
     wrap-uninstall-preflight-on_intel)
       awk '
-        /^  uninstall_preflight do$/ { inup = 1; print "  on_intel do"; print; next }
+        /^  uninstall_preflight_steps do$/ { inup = 1; print "  on_intel do"; print; next }
         inup && /^  end$/ { inup = 0; print; print "  end"; next }
         { print }
       ' "$base" >"$out" ;;
@@ -198,6 +202,8 @@ for mutation in \
   drop-register-json \
   drop-register-must-succeed \
   drop-unregister-must-succeed \
+  legacy-postflight-block \
+  legacy-uninstall-preflight-block \
   duplicate-app \
   duplicate-postflight \
   auto-updates-in-canonical \
@@ -232,6 +238,7 @@ for mutation in \
   remove-postflight-block \
   comment-uninstall-preflight-block \
   remove-uninstall-preflight-block \
+  legacy-postflight-block \
   auto-updates-missing-historical \
   comment-uninstall-quit \
   add-zap \
