@@ -20,28 +20,32 @@ cask "artifactbridge" do
   binary "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
 
-  postflight do
-    system_command "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
-                   args:         [
-                     "installation",
-                     "register-homebrew-cask",
-                     "--brew-prefix",
-                     HOMEBREW_PREFIX,
-                     "--json",
-                   ],
-                   must_succeed: true
+  postflight_steps do
+    run "ArtifactBridge.app/Contents/MacOS/artifactbridge",
+        args:           [
+          "installation",
+          "register-homebrew-cask",
+          "--brew-prefix",
+          "{{HOMEBREW_PREFIX}}",
+          "--json",
+        ],
+        base:           :appdir,
+        writable_paths: ["~/.artifactbridge"],
+        must_succeed:   true
   end
 
-  uninstall_preflight do
-    system_command "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
-                   args:         [
-                     "installation",
-                     "unregister-homebrew-cask",
-                     "--brew-prefix",
-                     HOMEBREW_PREFIX,
-                     "--json",
-                   ],
-                   must_succeed: true
+  uninstall_preflight_steps do
+    run "ArtifactBridge.app/Contents/MacOS/artifactbridge",
+        args:           [
+          "installation",
+          "unregister-homebrew-cask",
+          "--brew-prefix",
+          "{{HOMEBREW_PREFIX}}",
+          "--json",
+        ],
+        base:           :appdir,
+        writable_paths: ["~/.artifactbridge"],
+        must_succeed:   true
   end
 
   uninstall quit: "com.artifactbridge.tray"
