@@ -9,9 +9,9 @@
 #   - required stanzas are direct children of exactly one outer
 #     `cask "artifactbridge"` block in the pinned order (an on_arm/on_intel or
 #     any nested wrapper inserts lines and fails);
-#   - postflight/uninstall_preflight each carry exactly one system_command
-#     with the version-correct path, exact argument sequence, and
-#     must_succeed: true;
+#   - postflight_steps/uninstall_preflight_steps each carry exactly one run
+#     of the version-correct app binary, exact argument sequence, base:
+#     :appdir, writable_paths for ~/.artifactbridge, and must_succeed: true;
 #   - comments, heredocs, multiline strings, interpolation tricks, unknown
 #     blocks/statements, duplicates, reorderings, or extra/missing lines fail.
 #
@@ -96,28 +96,32 @@ ${ownership}  depends_on :macos
   binary "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
 
-  postflight do
-    system_command "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
-                   args:         [
-                     "installation",
-                     "register-homebrew-cask",
-                     "--brew-prefix",
-                     HOMEBREW_PREFIX,
-                     "--json",
-                   ],
-                   must_succeed: true
+  postflight_steps do
+    run "$app_bundle/Contents/MacOS/artifactbridge",
+        args:           [
+          "installation",
+          "register-homebrew-cask",
+          "--brew-prefix",
+          "{{HOMEBREW_PREFIX}}",
+          "--json",
+        ],
+        base:           :appdir,
+        writable_paths: ["~/.artifactbridge"],
+        must_succeed:   true
   end
 
-  uninstall_preflight do
-    system_command "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
-                   args:         [
-                     "installation",
-                     "unregister-homebrew-cask",
-                     "--brew-prefix",
-                     HOMEBREW_PREFIX,
-                     "--json",
-                   ],
-                   must_succeed: true
+  uninstall_preflight_steps do
+    run "$app_bundle/Contents/MacOS/artifactbridge",
+        args:           [
+          "installation",
+          "unregister-homebrew-cask",
+          "--brew-prefix",
+          "{{HOMEBREW_PREFIX}}",
+          "--json",
+        ],
+        base:           :appdir,
+        writable_paths: ["~/.artifactbridge"],
+        must_succeed:   true
   end
 
   uninstall quit: "com.artifactbridge.tray"
