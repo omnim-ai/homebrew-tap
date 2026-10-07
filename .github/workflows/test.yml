@@ -63,6 +63,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The step hooks need Homebrew >= 7.0.2: older versions give hooks a temp
+      # HOME the app does not recognize, so registration is silently lost.
+      - name: Update Homebrew for step-hook validation
+        run: |
+          set -euo pipefail
+          brew update
+          brew --version
+          brew --version | ruby -rrubygems -e '
+            version = STDIN.read.lines.first.split.fetch(1).split("-").first
+            abort "Homebrew >= 7.0.2 is required for ArtifactBridge step hooks (found #{version})" if Gem::Version.new(version) < Gem::Version.new("7.0.2")
+          '
+
       - name: Register this checkout as the tap
         run: brew tap omnim-ai/tap "$GITHUB_WORKSPACE"
 
