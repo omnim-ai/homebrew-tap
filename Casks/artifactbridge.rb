@@ -1,6 +1,6 @@
 cask "artifactbridge" do
-  version "0.5.138"
-  sha256 "4a17dbb60cabaedca08fbea5e4186db2a09df9d3964173b689ac0e2a4f09c7f3"
+  version "0.5.139"
+  sha256 "a8e9d793f3a8cfad7eab179ccae55454b6ab8d6166576e3063870bfb287d3bcb"
 
   url "https://app.artifactbridge.com/tray/releases/download/tray-v#{version}/ArtifactBridge-Tray-macos-universal.dmg"
   name "ArtifactBridge"
