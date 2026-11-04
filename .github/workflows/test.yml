@@ -78,6 +78,11 @@ jobs:
       - name: Register this checkout as the tap
         run: brew tap omnim-ai/tap "$GITHUB_WORKSPACE"
 
+      # Homebrew refuses to load a Cask from an untrusted tap. Trust only the
+      # reviewed Cask, and only on this disposable runner.
+      - name: Trust the reviewed Cask
+        run: brew trust --cask omnim-ai/tap/artifactbridge
+
       - name: Run Homebrew validation
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
