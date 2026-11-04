@@ -13,6 +13,7 @@ When `Casks/artifactbridge.rb` exists, also run:
 
 ```sh
 brew tap omnim-ai/tap "$(pwd)"
+brew trust --cask omnim-ai/tap/artifactbridge
 brew style omnim-ai/tap/artifactbridge
 brew audit --cask --strict omnim-ai/tap/artifactbridge
 brew livecheck --cask omnim-ai/tap/artifactbridge

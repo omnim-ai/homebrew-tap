@@ -6,8 +6,15 @@ for macOS.
 After the first compatible stable release is published, install it with:
 
 ```sh
+brew tap omnim-ai/tap
+brew trust --cask omnim-ai/tap/artifactbridge
 brew install --cask omnim-ai/tap/artifactbridge
 ```
+
+Homebrew refuses to load a Cask from a third-party tap until you trust it.
+Review `Casks/artifactbridge.rb` in this repository before you run
+`brew trust`. The command trusts only the ArtifactBridge Cask, not the whole
+tap.
 
 The disk image (DMG) remains the primary download on the ArtifactBridge web
 site. This tap is an alternative installation method.
