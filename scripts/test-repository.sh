@@ -33,6 +33,13 @@ contract 0.5.26 "$temporary/boundary.rb"
 render 0.5.27 "$placeholder" "$temporary/boundary-plus-1.rb"
 contract 0.5.27 "$temporary/boundary-plus-1.rb"
 
+# hook generation boundary: 0.6.6 is the last Cask without the mandatory
+# install preflight, 0.6.7 the first with it
+render 0.6.6 "$placeholder" "$temporary/g2-boundary-1.rb"
+contract 0.6.6 "$temporary/g2-boundary-1.rb"
+render 0.6.7 "$placeholder" "$temporary/g2-boundary.rb"
+contract 0.6.7 "$temporary/g2-boundary.rb"
+
 # commented/missing/duplicated/misplaced structure must fail the contract
 "$root/scripts/test-cask-contract-fixtures.sh"
 

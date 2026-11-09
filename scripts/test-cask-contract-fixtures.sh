@@ -133,6 +133,30 @@ mutant() {
       awk '{ lines[NR] = $0 } END { for (i = 1; i < NR; i++) print lines[i] }' "$base" >"$out" ;;
     system-command-outside-blocks)
       awk '{ print } /^  depends_on :macos$/ { print "  system_command \"/bin/true\"," }' "$base" >"$out" ;;
+    remove-install-preflight-block)
+      awk '
+        /^  preflight_steps do$/ { inblk = 1; next }
+        inblk && /^  end$/ { inblk = 0; skip = 1; next }
+        inblk { next }
+        skip && /^$/ { skip = 0; next }
+        { skip = 0; print }
+      ' "$base" >"$out" ;;
+    drop-install-preflight-must-succeed)
+      awk '
+        /^  preflight_steps do$/ { inblk = 1 }
+        inblk { sub(/must_succeed:[[:space:]]+true/, "must_succeed: false") }
+        inblk && /^  end$/ { inblk = 0 }
+        { print }
+      ' "$base" >"$out" ;;
+    install-preflight-from-appdir)
+      awk '
+        /^  preflight_steps do$/ { inblk = 1 }
+        inblk { sub(/:staged_path/, ":appdir") }
+        inblk && /^  end$/ { inblk = 0 }
+        { print }
+      ' "$base" >"$out" ;;
+    install-preflight-forced)
+      sed 's/"preflight-homebrew-cask",/"preflight-homebrew-cask", "--force",/' "$base" >"$out" ;;
     swapped-register-command)
       sed 's/"register-homebrew-cask"/"unregister-homebrew-cask"/' "$base" >"$out" ;;
     wrap-app-on_arm)
@@ -248,6 +272,18 @@ for mutation in \
   wrap-postflight-on_arm \
   heredoc-entire-cask; do
   mutant "historical-$mutation" 0.5.25 "$mutation"
+done
+
+# hook generation G2 (from 0.6.7): the mandatory install preflight
+render 0.6.6 "$temporary/base-g1.rb"
+expect_pass "last G1 render" 0.6.6 "$temporary/base-g1.rb"
+expect_fail "G1 render under the G2 boundary" 0.6.7 "$temporary/base-g1.rb"
+for mutation in \
+  remove-install-preflight-block \
+  drop-install-preflight-must-succeed \
+  install-preflight-from-appdir \
+  install-preflight-forced; do
+  mutant "g2-$mutation" 0.6.7 "$mutation"
 done
 
 # a wrong version argument must fail even on an untouched Cask
