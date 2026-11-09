@@ -21,7 +21,7 @@ record="$HOME/.artifactbridge/installation.json"
 
 codesign --verify --deep --strict "$app"
 spctl --assess --verbose=2 --type execute "$app"
-xcrun stapler validate "$app"
+"$(dirname "${BASH_SOURCE[0]}")/stapler-validate.sh" "$app"
 [[ "$(defaults read "$app/Contents/Info" CFBundleIdentifier)" == "com.artifactbridge.tray" ]]
 [[ "$(defaults read "$app/Contents/Info" CFBundleShortVersionString)" == "$version" ]]
 [[ "$(defaults read "$app/Contents/Info" CFBundleVersion)" == "$version" ]]

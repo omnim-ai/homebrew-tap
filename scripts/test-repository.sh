@@ -36,6 +36,9 @@ contract 0.5.27 "$temporary/boundary-plus-1.rb"
 # commented/missing/duplicated/misplaced structure must fail the contract
 "$root/scripts/test-cask-contract-fixtures.sh"
 
+# stapler validation retries only dropped connections and fails closed
+"$root/scripts/test-stapler-validate.sh"
+
 if [[ -f "$root/Casks/artifactbridge.rb" ]]; then
   version="$(sed -n 's/^  version "\([0-9.]*\)"$/\1/p' "$root/Casks/artifactbridge.rb")"
   sha256="$(sed -n 's/^  sha256 "\([0-9a-f]\{64\}\)"$/\1/p' "$root/Casks/artifactbridge.rb")"
