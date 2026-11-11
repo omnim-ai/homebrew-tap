@@ -12,6 +12,9 @@
 #   - postflight_steps/uninstall_preflight_steps each carry exactly one run
 #     of the version-correct app binary, exact argument sequence, base:
 #     :appdir, writable_paths for ~/.artifactbridge, and must_succeed: true;
+#   - from hook generation G2 (0.6.12), a mandatory preflight_steps block runs
+#     `installation preflight-homebrew-cask` from base: :staged_path with
+#     must_succeed: true;
 #   - comments, heredocs, multiline strings, interpolation tricks, unknown
 #     blocks/statements, duplicates, reorderings, or extra/missing lines fail.
 #
@@ -70,6 +73,30 @@ if ((historical)); then
   ownership=$'  auto_updates true\n'
 fi
 
+g2_major=0
+g2_minor=6
+g2_patch=12
+install_preflight=""
+if ((10#$major > g2_major)) \
+  || ((10#$major == g2_major && 10#$minor > g2_minor)) \
+  || ((10#$major == g2_major && 10#$minor == g2_minor && 10#$patch >= g2_patch)); then
+  install_preflight="  preflight_steps do
+    run \"$app_bundle/Contents/MacOS/artifactbridge\",
+        args:           [
+          \"installation\",
+          \"preflight-homebrew-cask\",
+          \"--brew-prefix\",
+          \"{{HOMEBREW_PREFIX}}\",
+          \"--json\",
+        ],
+        base:           :staged_path,
+        writable_paths: [\"~/.artifactbridge\"],
+        must_succeed:   true
+  end
+
+"
+fi
+
 expected="$(mktemp)"
 trap 'rm -f -- "$expected"' EXIT
 
@@ -96,7 +123,7 @@ ${ownership}  depends_on :macos
   binary "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
 
-  postflight_steps do
+${install_preflight}  postflight_steps do
     run "$app_bundle/Contents/MacOS/artifactbridge",
         args:           [
           "installation",

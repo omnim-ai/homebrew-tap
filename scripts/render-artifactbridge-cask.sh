@@ -38,6 +38,33 @@ if ((canonical == 0)); then
   ownership=$'  auto_updates true\n'
 fi
 
+# Hook generation G2 (AI-5795): from 0.6.12 the application ships
+# `installation preflight-homebrew-cask` (0.6.11 and earlier bundles do not
+# have it), and the Cask runs it as a mandatory install preflight. It runs
+# from the staged copy because it runs before the App artifact moves, and
+# refuses an install (also a forced one) while an automatic update holds the
+# lifecycle reservation.
+install_preflight=""
+if ((10#$major > 0)) \
+  || ((10#$major == 0 && 10#$minor > 6)) \
+  || ((10#$major == 0 && 10#$minor == 6 && 10#$patch >= 12)); then
+  install_preflight="  preflight_steps do
+    run \"$app_bundle/Contents/MacOS/artifactbridge\",
+        args:           [
+          \"installation\",
+          \"preflight-homebrew-cask\",
+          \"--brew-prefix\",
+          \"{{HOMEBREW_PREFIX}}\",
+          \"--json\",
+        ],
+        base:           :staged_path,
+        writable_paths: [\"~/.artifactbridge\"],
+        must_succeed:   true
+  end
+
+"
+fi
+
 mkdir -p "$(dirname "$output")"
 temporary="$(mktemp "${output}.tmp.XXXXXX")"
 trap 'rm -f -- "$temporary"' EXIT
@@ -65,7 +92,7 @@ ${ownership}  depends_on :macos
   binary "#{appdir}/$app_bundle/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
 
-  postflight_steps do
+${install_preflight}  postflight_steps do
     run "$app_bundle/Contents/MacOS/artifactbridge",
         args:           [
           "installation",
