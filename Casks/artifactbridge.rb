@@ -1,6 +1,6 @@
 cask "artifactbridge" do
-  version "0.6.11"
-  sha256 "7b019dc6c6876c04f48b7020e6d4cd270706899523a4b19661b0c1dac48488c0"
+  version "0.6.12"
+  sha256 "892925cab49d70ce2d7ad13af25117e37eb03e7c02e61f91a0037f00fba6332f"
 
   url "https://app.artifactbridge.com/tray/releases/download/tray-v#{version}/ArtifactBridge-Tray-macos-universal.dmg"
   name "ArtifactBridge"
@@ -19,6 +19,20 @@ cask "artifactbridge" do
   app "ArtifactBridge.app"
   binary "#{appdir}/ArtifactBridge.app/Contents/MacOS/artifactbridge",
          target: "artifactbridge"
+
+  preflight_steps do
+    run "ArtifactBridge.app/Contents/MacOS/artifactbridge",
+        args:           [
+          "installation",
+          "preflight-homebrew-cask",
+          "--brew-prefix",
+          "{{HOMEBREW_PREFIX}}",
+          "--json",
+        ],
+        base:           :staged_path,
+        writable_paths: ["~/.artifactbridge"],
+        must_succeed:   true
+  end
 
   postflight_steps do
     run "ArtifactBridge.app/Contents/MacOS/artifactbridge",
