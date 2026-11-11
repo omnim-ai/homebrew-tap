@@ -12,7 +12,7 @@
 #   - postflight_steps/uninstall_preflight_steps each carry exactly one run
 #     of the version-correct app binary, exact argument sequence, base:
 #     :appdir, writable_paths for ~/.artifactbridge, and must_succeed: true;
-#   - from hook generation G2 (0.6.7), a mandatory preflight_steps block runs
+#   - from hook generation G2 (0.6.12), a mandatory preflight_steps block runs
 #     `installation preflight-homebrew-cask` from base: :staged_path with
 #     must_succeed: true;
 #   - comments, heredocs, multiline strings, interpolation tricks, unknown
@@ -75,7 +75,7 @@ fi
 
 g2_major=0
 g2_minor=6
-g2_patch=7
+g2_patch=12
 install_preflight=""
 if ((10#$major > g2_major)) \
   || ((10#$major == g2_major && 10#$minor > g2_minor)) \

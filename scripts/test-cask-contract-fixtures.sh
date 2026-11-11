@@ -274,16 +274,19 @@ for mutation in \
   mutant "historical-$mutation" 0.5.25 "$mutation"
 done
 
-# hook generation G2 (from 0.6.7): the mandatory install preflight
-render 0.6.6 "$temporary/base-g1.rb"
-expect_pass "last G1 render" 0.6.6 "$temporary/base-g1.rb"
-expect_fail "G1 render under the G2 boundary" 0.6.7 "$temporary/base-g1.rb"
+# hook generation G2 (from 0.6.12): the mandatory install preflight
+render 0.6.11 "$temporary/base-g1.rb"
+expect_pass "last G1 render" 0.6.11 "$temporary/base-g1.rb"
+expect_fail "G1 render under the G2 boundary" 0.6.12 "$temporary/base-g1.rb"
+render 0.6.12 "$temporary/base-g2.rb"
+expect_pass "first G2 render" 0.6.12 "$temporary/base-g2.rb"
+expect_fail "G2 render below the G2 boundary" 0.6.11 "$temporary/base-g2.rb"
 for mutation in \
   remove-install-preflight-block \
   drop-install-preflight-must-succeed \
   install-preflight-from-appdir \
   install-preflight-forced; do
-  mutant "g2-$mutation" 0.6.7 "$mutation"
+  mutant "g2-$mutation" 0.6.12 "$mutation"
 done
 
 # a wrong version argument must fail even on an untouched Cask
